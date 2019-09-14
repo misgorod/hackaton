@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type User struct {
 	Id   string
 	Name string
@@ -15,8 +17,10 @@ type Participant struct {
 }
 
 type Meeting struct {
-	Id           string
-	OwnerId      string
-	Amount       float64
-	Status       string
+	Id      string
+	Name    string
+	Date    time.Time
+	OwnerId string
+	Amount  float64
+	Status  string
 }

@@ -16,6 +16,8 @@ type Meeting struct {
 
 type meetingPostRequest struct {
 	Amount float64
+	Name   string
+	Date   string
 }
 
 func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
@@ -25,13 +27,7 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
 		return
 	}
-	meeting := model.Meeting{
-		Id:           "",
-		OwnerId:      id,
-		Amount:       reqBody.Amount,
-		Status:       "0",
-	}
-	result, err := p.Db.ExecContext(r.Context(), "insert into public.event (owner, amount, state) values($1, $2, $3)", meeting.OwnerId, meeting.Amount, meeting.Status)
+	result, err := p.Db.ExecContext(r.Context(), "insert into public.event (owner, amount, state, name, date) values($1, $2, $3, $4, $5)", id, reqBody.Amount, "0", reqBody.Name, reqBody.Date)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
@@ -46,7 +42,7 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 
 func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	rows, err := p.Db.QueryContext(r.Context(), "select e.id, e.amount from public.event e where e.owner = $1", id)
+	rows, err := p.Db.QueryContext(r.Context(), "select e.id, e.amount, e.date, e.name from public.event e where e.owner = $1", id)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
@@ -54,7 +50,7 @@ func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 	meetings := make([]model.Meeting, 0)
 	for rows.Next() {
 		var meeting model.Meeting
-		err := rows.Scan(&meeting.Id, &meeting.Amount)
+		err := rows.Scan(&meeting.Id, &meeting.Amount, &meeting.Date, &meeting.Name)
 		if err != nil {
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 			return
@@ -81,7 +77,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := p.Db.ExecContext(r.Context(), "insert into public.participant	(id_event, id_user, amount, invoice, state)	values ($1, $2, $3, $4, $5)", meetingId, ownerId, reqBody.Amount, reqBody.Invoice, "0")
+	result, err := p.Db.ExecContext(r.Context(), "insert into public.participant	(id_event, id_user, amount, invoice)	values ($1, $2, $3, $4)", meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return

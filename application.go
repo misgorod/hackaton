@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	_ "github.com/lib/pq"
 	"github.com/misgorod/hackaton/handler"
+	"gopkg.in/go-playground/validator.v9"
 	"log"
 	"net/http"
 )
@@ -16,8 +17,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	userHandler := handler.User{db}
-	meetingHandler := handler.Meeting{db}
+	userHandler := handler.User{db, validator.New()}
+	meetingHandler := handler.Meeting{db, validator.New()}
 	invoiceHandler := handler.Invoice{db}
 	healthHandler := handler.Health{}
 	r := chi.NewRouter()
@@ -28,7 +29,7 @@ func main() {
 		r.Get("/{id}/meetings", meetingHandler.GetAll)
 		r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
 	})
-	r.Post("/invoice", )
+	r.Post("/invoice", invoiceHandler.Post)
 
 	r.Get("/healthcheck", healthHandler.Get)
 	log.Fatal(http.ListenAndServe(":80", r))

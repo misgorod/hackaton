@@ -24,7 +24,7 @@ func main() {
 	r.Route("/participants", func(r chi.Router) {
 		r.Post("/", userHandler.Post)
 		r.Post("/{id}/meetings", meetingHandler.Post)
-		//r.Get("/{id}/meetings", meetingHandler.GetAll)
+		r.Get("/{id}/meetings", meetingHandler.GetAll)
 		r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
 	})
 

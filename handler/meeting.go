@@ -14,13 +14,13 @@ type Meeting struct {
 	Db *sql.DB
 }
 
-type MeetingPostRequest struct {
+type meetingPostRequest struct {
 	Amount float64
 }
 
 func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	var reqBody *MeetingPostRequest
+	var reqBody *meetingPostRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
 		return
@@ -45,17 +45,29 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, 200, insertedId)
 }
 
-//func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
-//	id := chi.URLParam(r, "id")
-//	rows, err := p.Db.QueryContext(r.Context(), "")
-//	if err != nil {
-//		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
-//		return
-//	}
-//
-//}
+func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	rows, err := p.Db.QueryContext(r.Context(), "select e.id, e.amount from public.event e where e.owner = $1", id)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+		return
+	}
+	meetings := make([]model.Meeting, 0)
+	for rows.Next() {
+		var meeting model.Meeting
+		err := rows.Scan(&meeting.Id, &meeting.Amount)
+		if err != nil {
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+			return
+		}
+		meeting.Status = "0"
+		meeting.OwnerId = id
+		meetings = append(meetings, meeting)
+	}
+	common.RespondJSON(w, http.StatusOK, meetings)
+}
 
-type MeetingPutRequest struct {
+type meetingPutRequest struct {
 	Amount  float64
 	Invoice string
 }
@@ -64,7 +76,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	ownerId := chi.URLParam(r, "ownerId")
 	meetingId := chi.URLParam(r, "meetingId")
 
-	var reqBody *MeetingPutRequest
+	var reqBody *meetingPutRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
 		return

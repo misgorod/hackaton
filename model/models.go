@@ -19,5 +19,4 @@ type Meeting struct {
 	OwnerId      string
 	Amount       float64
 	Status       string
-	Participants []Participant
 }

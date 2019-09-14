@@ -18,6 +18,7 @@ func main() {
 	}
 	userHandler := handler.User{db}
 	meetingHandler := handler.Meeting{db}
+	invoiceHandler := handler.Invoice{db}
 	healthHandler := handler.Health{}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)
@@ -27,6 +28,7 @@ func main() {
 		r.Get("/{id}/meetings", meetingHandler.GetAll)
 		r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
 	})
+	r.Post("/invoice", )
 
 	r.Get("/healthcheck", healthHandler.Get)
 	log.Fatal(http.ListenAndServe(":80", r))

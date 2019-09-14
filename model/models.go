@@ -3,8 +3,8 @@ package model
 import "time"
 
 type User struct {
-	Id   string
-	Name string
+	Id   string `validate:"required,gte=1"`
+	Name string `validate:"required,gte=1"`
 }
 
 type Participant struct {

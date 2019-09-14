@@ -7,17 +7,19 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/misgorod/hackaton/common"
 	"github.com/misgorod/hackaton/model"
+	"gopkg.in/go-playground/validator.v9"
 	"net/http"
 )
 
 type Meeting struct {
 	Db *sql.DB
+	Validate *validator.Validate
 }
 
 type meetingPostRequest struct {
-	Amount float64
-	Name   string
-	Date   string
+	Amount string `validate:"required,gte=1"`
+	Name   string `validate:"required,gte=1"`
+	Date   string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +27,10 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 	var reqBody *meetingPostRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
+		return
+	}
+	if err := p.Validate.Struct(reqBody); err != nil {
+		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
 	_, err := p.Db.ExecContext(r.Context(), "insert into public.event (owner, amount, state, name, date) values($1, $2, $3, $4, $5)", id, reqBody.Amount, "0", reqBody.Name, reqBody.Date)
@@ -58,8 +64,8 @@ func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 type meetingPutRequest struct {
-	Amount  float64
-	Invoice string
+	Amount  string `validate:"required,gte=1"`
+	Invoice string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
@@ -71,8 +77,11 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
 		return
 	}
-
-	_, err := p.Db.ExecContext(r.Context(), "insert into public.participant	(id_event, id_user, amount, invoice)	values ($1, $2, $3, $4)", meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
+	if err := p.Validate.Struct(reqBody); err != nil {
+		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
+		return
+	}
+	_, err := p.Db.ExecContext(r.Context(), "insert into public.participant	(id_event, id_user, amount, invoice) values ($1, $2, $3, $4)", meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return

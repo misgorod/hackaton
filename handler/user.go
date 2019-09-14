@@ -20,7 +20,7 @@ func (p *User) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id string
-	err := p.Db.QueryRowContext(r.Context(), "select id from user where id = $1", user.Id).Scan(&id)
+	err := p.Db.QueryRowContext(r.Context(), "select id from public.user where id = $1", user.Id).Scan(&id)
 	if err == nil {
 		common.RespondJSON(w, http.StatusBadRequest, "user already exists")
 		return
@@ -28,7 +28,7 @@ func (p *User) Post(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}
-	if _, err := p.Db.ExecContext(r.Context(), "insert into user(id, name) values($1, $2)", user.Id, ""); err != nil {
+	if _, err := p.Db.ExecContext(r.Context(), "insert into public.user(id, name) values($1, $2)", user.Id, ""); err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}

@@ -21,15 +21,13 @@ func main() {
 	healthHandler := handler.Health{}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)
-	r.Route("/api", func(r chi.Router) {
-		r.Route("/participants", func(r chi.Router) {
-			r.Post("/", userHandler.Post)
-			r.Post("/{id}/meetings", meetingHandler.Post)
-			//r.Get("/{id}/meetings", meetingHandler.GetAll)
-			r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
-		})
-
-		r.Get("/healthcheck", healthHandler.Get)
+	r.Route("/participants", func(r chi.Router) {
+		r.Post("/", userHandler.Post)
+		r.Post("/{id}/meetings", meetingHandler.Post)
+		//r.Get("/{id}/meetings", meetingHandler.GetAll)
+		r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
 	})
+
+	r.Get("/healthcheck", healthHandler.Get)
 	log.Fatal(http.ListenAndServe(":80", r))
 }

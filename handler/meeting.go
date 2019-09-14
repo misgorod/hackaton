@@ -30,7 +30,6 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 		OwnerId:      id,
 		Amount:       reqBody.Amount,
 		Status:       "0",
-		Participants: nil,
 	}
 	result, err := p.Db.ExecContext(r.Context(), "insert into public.event (owner, amount, state) values($1, $2, $3)", meeting.OwnerId, meeting.Amount, meeting.Status)
 	if err != nil {

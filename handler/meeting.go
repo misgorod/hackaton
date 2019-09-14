@@ -89,3 +89,24 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	}
 	common.RespondJSON(w, 200, insertedId)
 }
+
+func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
+	meetingId := chi.URLParam(r, "meetingId")
+
+	rows, err := p.Db.QueryContext(r.Context(), "select p.id_user, u.name, p.amount, p.invoice from public.participant p join public.user u where p.id_event = $1", meetingId)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+		return
+	}
+	var participants []model.Participant = make([]model.Participant, 0)
+	for rows.Next() {
+		var participant model.Participant
+		err := rows.Scan(&participant.UserId, &participant.UserName, &participant.Amount, &participant.Invoice)
+		if err != nil {
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+			return
+		}
+		participants = append(participants, participant)
+	}
+	common.RespondJSON(w, http.StatusOK, participants)
+}

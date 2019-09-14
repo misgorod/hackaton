@@ -8,12 +8,11 @@ type User struct {
 }
 
 type Participant struct {
-	Id      string
-	OwnerId string
-	UserId  string
-	Amount  float64
-	Invoice string
-	Status  string
+	UserId   string
+	UserName string
+	Amount   float64
+	Invoice  string
+	Status   string
 }
 
 type Meeting struct {

@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+func RespondOK(w http.ResponseWriter) {
+	w.WriteHeader(200)
+}
+
 func RespondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	response, err := json.Marshal(payload)
 	if err != nil {

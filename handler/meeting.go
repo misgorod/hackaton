@@ -65,11 +65,15 @@ func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 			common.RespondError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		state := "5"
-		for _, recipient := range recipients {
-			if recipient.State == "0" {
-				state = "0"
-				break
+		state := "1"
+		if len(recipients) == 0 {
+			state = "0"
+		} else {
+			for _, recipient := range recipients {
+				if recipient.State == "0" {
+					state = "0"
+					break
+				}
 			}
 		}
 		meeting.State = state
@@ -126,6 +130,7 @@ func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
 type recipientPostRequest struct {
 	Amount    string `validate:"required,gte=1"`
 	Payer string `validate:"required,gte=1"`
+	Name string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +158,7 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	err = p.createParticipant(r.Context(), meetindId, ownerId, reqBody.Amount, string(invoice))
+	err = p.createParticipant(r.Context(), meetindId, reqBody.Name, reqBody.Amount, string(invoice))
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -231,7 +236,7 @@ func createOutInvoice(amount, invoice, payer, recipient string) error {
 	if err != nil {
 		return err
 	}
-	if response.Status != "200" {
+	if response.StatusCode != 200 {
 		return errors.New("Error while creating invoice")
 	}
 	return nil

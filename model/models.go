@@ -17,6 +17,6 @@ type Meeting struct {
 	Name    string
 	Date    string
 	OwnerId string
-	Amount  float64
+	Amount  string
 	State   string
 }

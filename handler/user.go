@@ -38,5 +38,5 @@ func (p *User) Post(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}
-	common.RespondJSON(w, 200, id)
+	common.RespondOK(w)
 }

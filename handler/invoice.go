@@ -8,12 +8,12 @@ import (
 )
 
 type Invoice struct {
-	db *sql.DB
+	Db *sql.DB
 }
 
 func (i *Invoice) Post(w http.ResponseWriter, r *http.Request) {
 	var id int
-	err := i.db.QueryRowContext(r.Context(), "SELECT nextval('public.serial')").Scan(&id)
+	err := i.Db.QueryRowContext(r.Context(), "SELECT nextval('public.serial')").Scan(&id)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 	}

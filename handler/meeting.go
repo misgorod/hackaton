@@ -110,6 +110,7 @@ func (p *Meeting) createParticipant(ctx context.Context, meetingId, ownerId, amo
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
@@ -231,4 +232,5 @@ func createInvoice(amount, invoice, recipient string) error {
 	if response.Status != "200" {
 		return errors.New("Error while creating invoice")
 	}
+	return nil
 }

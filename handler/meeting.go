@@ -139,9 +139,9 @@ func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 type recipientPostRequest struct {
-	Amount    string `validate:"required,gte=1"`
-	Payer string `validate:"required,gte=1"`
-	Name string `validate:"required,gte=1"`
+	Amount string `validate:"required,gte=1"`
+	Payer  string `validate:"required,gte=1"`
+	Name   string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
@@ -225,13 +225,13 @@ func getStateInvoice(invoice string, recipient string) (int, error) {
 	}
 }
 
-type createInvoiceRequest struct {
+type createOutInvoiceRequest struct {
 	Amount       float64 `json:"amount"`
-	CurrencyCode int `json:"currencyCode"`
-	Description  string `json:"description"`
-	Number       string `json:"number"`
-	Payer        string `json:"payer"'`
-	Recipient    string `json:"recipient"`
+	CurrencyCode int     `json:"currencyCode"`
+	Description  string  `json:"description"`
+	Number       string  `json:"number"`
+	Payer        string  `json:"payer"'`
+	Recipient    string  `json:"recipient"`
 }
 
 func createOutInvoice(amount, invoice, payer, recipient string) error {
@@ -239,7 +239,7 @@ func createOutInvoice(amount, invoice, payer, recipient string) error {
 	if err != nil {
 		return errors.New("Eror converting amount")
 	}
-	body := createInvoiceRequest{
+	body := createOutInvoiceRequest{
 		amountFloat,
 		810,
 		"Description",

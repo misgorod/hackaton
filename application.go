@@ -32,7 +32,7 @@ func main() {
 		r.Post("/{ownerId}/meetings/{meetingId}", meetingHandler.PostRecipient)
 	})
 	r.Post("/invoice", invoiceHandler.Post)
-
+	r.Put("/invoice", invoiceHandler.Put)
 	r.Get("/healthcheck", healthHandler.Get)
 	log.Fatal(http.ListenAndServe(":80", r))
 }

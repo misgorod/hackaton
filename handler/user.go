@@ -11,7 +11,7 @@ import (
 )
 
 type User struct {
-	Db *sql.DB
+	Db       *sql.DB
 	Validate *validator.Validate
 }
 

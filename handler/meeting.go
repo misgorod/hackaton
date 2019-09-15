@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/misgorod/hackaton/common"
@@ -12,7 +14,7 @@ import (
 )
 
 type Meeting struct {
-	Db *sql.DB
+	Db       *sql.DB
 	Validate *validator.Validate
 }
 
@@ -56,7 +58,19 @@ func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 			return
 		}
-		meeting.Status = "0"
+		recipients, err := p.getRecipientsStatus(r.Context(), meeting.Id)
+		if err != nil {
+			common.RespondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		state := "5"
+		for _, recipient := range recipients {
+			if recipient.State == "0" {
+				state = "0"
+				break
+			}
+		}
+		meeting.State = state
 		meeting.OwnerId = id
 		meetings = append(meetings, meeting)
 	}
@@ -91,21 +105,54 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 
 func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
 	meetingId := chi.URLParam(r, "meetingId")
-
-	rows, err := p.Db.QueryContext(r.Context(), "select p.id_user, u.name, p.amount, p.invoice from public.participant p join public.user u where p.id_event = $1", meetingId)
+	participants, err := p.getRecipientsStatus(r.Context(), meetingId)
 	if err != nil {
-		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	common.RespondJSON(w, http.StatusOK, participants)
+}
+
+func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]model.Participant, error) {
+	rows, err := p.Db.QueryContext(ctx, "select p.id_user, u.name, p.amount, p.invoice from public.participant p join public.user u where p.id_event = $1", meetingId)
+	if err != nil {
+		return nil, err
 	}
 	var participants []model.Participant = make([]model.Participant, 0)
 	for rows.Next() {
 		var participant model.Participant
 		err := rows.Scan(&participant.UserId, &participant.UserName, &participant.Amount, &participant.Invoice)
 		if err != nil {
-			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
-			return
+			return nil, err
 		}
+		state, err := GetStateInvoice(participant.Invoice, participant.UserId)
+		if err != nil {
+			return nil, err
+		}
+		participant.State = string(state)
 		participants = append(participants, participant)
 	}
-	common.RespondJSON(w, http.StatusOK, participants)
+	return participants, nil
+}
+
+type StateInvoiceResponse struct {
+	State int `json:"omitempty"`
+}
+
+func GetStateInvoice(invoice string, recipient string) (int, error) {
+	response, err := http.Get(fmt.Sprintf("http://89.208.84.235:31080/api/v1/invoice/810/%s/%s", invoice, recipient))
+	if err != nil {
+		return 0, err
+	}
+	var stateResponse *StateInvoiceResponse
+	if json.NewDecoder(response.Body).Decode(&stateResponse); err != nil {
+		return 0, err
+	}
+	if stateResponse.State == 1 {
+		return 0, nil
+	} else if stateResponse.State == 5 {
+		return 1, nil
+	} else {
+		return 0, errors.New("Wrong state of invoice")
+	}
 }

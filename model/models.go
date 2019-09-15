@@ -12,7 +12,7 @@ type Participant struct {
 	UserName string
 	Amount   float64
 	Invoice  string
-	Status   string
+	State    string
 }
 
 type Meeting struct {
@@ -21,5 +21,5 @@ type Meeting struct {
 	Date    time.Time
 	OwnerId string
 	Amount  float64
-	Status  string
+	State   string
 }

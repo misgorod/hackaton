@@ -82,6 +82,7 @@ func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {
 type meetingPutRequest struct {
 	Amount  string `validate:"required,gte=1"`
 	Invoice string `validate:"required,gte=1"`
+	Name    string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +98,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
-	err := p.createParticipant(r.Context(), meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
+	err := p.createParticipant(r.Context(), meetingId, reqBody.Name, reqBody.Amount, reqBody.Invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -105,8 +106,8 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	common.RespondOK(w)
 }
 
-func (p *Meeting) createParticipant(ctx context.Context, meetingId, ownerId, amount, invoice string) error {
-	_, err := p.Db.ExecContext(ctx, "insert into public.participant (id_event, id_user, amount, invoice) values ($1, $2, $3, $4)", meetingId, ownerId, amount, invoice)
+func (p *Meeting) createParticipant(ctx context.Context, meetingId, name, amount, invoice string) error {
+	_, err := p.Db.ExecContext(ctx, "insert into public.participant (id_event, name, amount, invoice) values ($1, $2, $3, $4)", meetingId, name, amount, invoice)
 	if err != nil {
 		return err
 	}
@@ -162,18 +163,18 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]model.Participant, error) {
-	rows, err := p.Db.QueryContext(ctx, "select p.id_user, u.name, p.amount, p.invoice from public.participant p join public.user u where p.id_event = $1", meetingId)
+	rows, err := p.Db.QueryContext(ctx, "select p.name, p.amount, p.invoice from public.participant p where p.id_event = $1", meetingId)
 	if err != nil {
 		return nil, err
 	}
 	var participants []model.Participant = make([]model.Participant, 0)
 	for rows.Next() {
 		var participant model.Participant
-		err := rows.Scan(&participant.UserId, &participant.UserName, &participant.Amount, &participant.Invoice)
+		err := rows.Scan(&participant.UserName, &participant.Amount, &participant.Invoice)
 		if err != nil {
 			return nil, err
 		}
-		state, err := getStateInvoice(participant.Invoice, participant.UserId)
+		state, err := getStateInvoice(participant.Invoice, participant.UserName)
 		if err != nil {
 			return nil, err
 		}

@@ -86,7 +86,6 @@ type meetingPutRequest struct {
 }
 
 func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
-	ownerId := chi.URLParam(r, "ownerId")
 	meetingId := chi.URLParam(r, "meetingId")
 
 	var reqBody *meetingPutRequest

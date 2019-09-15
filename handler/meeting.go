@@ -12,6 +12,7 @@ import (
 	"github.com/misgorod/hackaton/model"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
+	"strconv"
 )
 
 type Meeting struct {
@@ -211,7 +212,7 @@ func getStateInvoice(invoice string, recipient string) (int, error) {
 }
 
 type createInvoiceRequest struct {
-	Amount       string
+	Amount       float64
 	CurrencyCode int
 	Description  string
 	Number       string
@@ -220,8 +221,12 @@ type createInvoiceRequest struct {
 }
 
 func createOutInvoice(amount, invoice, payer, recipient string) error {
+	amountFloat, err := strconv.ParseFloat(amount, 64)
+	if err != nil {
+		return errors.New("Eror converting amount")
+	}
 	body := createInvoiceRequest{
-		amount,
+		amountFloat,
 		810,
 		"Description",
 		invoice,
@@ -237,7 +242,7 @@ func createOutInvoice(amount, invoice, payer, recipient string) error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		return errors.New("Error while creating invoice")
+		return errors.New(fmt.Sprintf("Error while creating invoice: status code: %v", response.StatusCode))
 	}
 	return nil
 }

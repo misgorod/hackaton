@@ -155,7 +155,7 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}
-	err = createOutInvoice(reqBody.Amount, string(invoice), reqBody.Payer, ownerId)
+	err = createOutInvoice(reqBody.Amount, strconv.Itoa(invoice), reqBody.Payer, ownerId)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return

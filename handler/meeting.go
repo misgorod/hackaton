@@ -11,6 +11,7 @@ import (
 	"github.com/misgorod/hackaton/common"
 	"github.com/misgorod/hackaton/model"
 	"gopkg.in/go-playground/validator.v9"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -242,7 +243,8 @@ func createOutInvoice(amount, invoice, payer, recipient string) error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Error while creating invoice: status code: %v", response.StatusCode))
+		bodyBytes, _ := ioutil.ReadAll(response.Body)
+		return errors.New(fmt.Sprintf("Error while creating invoice: bodySent: %v : status code: %v : bodyREcieved: %v", bodyBytes, response.StatusCode, bodyBytes))
 	}
 	return nil
 }

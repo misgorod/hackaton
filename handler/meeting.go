@@ -213,12 +213,12 @@ func getStateInvoice(invoice string, recipient string) (int, error) {
 }
 
 type createInvoiceRequest struct {
-	Amount       float64
-	CurrencyCode int
-	Description  string
-	Number       string
-	Payer        string
-	Recipient    string
+	Amount       float64 `json:"amount"`
+	CurrencyCode int `json:"currencyCode"`
+	Description  string `json:"description"`
+	Number       string `json:"number"`
+	Payer        string `json:"payer"'`
+	Recipient    string `json:"recipient"`
 }
 
 func createOutInvoice(amount, invoice, payer, recipient string) error {

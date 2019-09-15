@@ -56,7 +56,7 @@ type createInvoiceRequest struct {
 	CurrencyCode int     `json:"currencyCode"`
 	Description  string  `json:"description"`
 	Number       string  `json:"number"`
-	recipient    string  `json:"recipient"`
+	Recipient    string  `json:"recipient"`
 }
 
 func createInvoice(amount, recipient string, invoice int) error {

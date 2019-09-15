@@ -35,12 +35,13 @@ func (p *Meeting) Post(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
-	_, err := p.Db.ExecContext(r.Context(), "insert into public.event (owner, amount, state, name, date) values($1, $2, $3, $4, $5)", id, reqBody.Amount, "0", reqBody.Name, reqBody.Date)
+	var insertedId int
+	err := p.Db.QueryRowContext(r.Context(), "insert into public.event (owner, amount, state, name, date) values($1, $2, $3, $4, $5) RETURNING id", id, reqBody.Amount, "0", reqBody.Name, reqBody.Date).Scan(&insertedId)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}
-	common.RespondOK(w)
+	common.RespondJSON(w, 200, insertedId)
 }
 
 func (p *Meeting) GetAll(w http.ResponseWriter, r *http.Request) {

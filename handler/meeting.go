@@ -107,7 +107,12 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
-	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, reqBody.Invoice)
+	invoiceInt, err := strconv.Atoi(reqBody.Invoice)
+	if err != nil {
+		common.RespondError(w, http.StatusBadRequest, "invoice must be int")
+		return
+	}
+	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, invoiceInt)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -115,7 +120,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	common.RespondOK(w)
 }
 
-func (p *Meeting) createParticipant(ctx context.Context, meetingId int, name, amount, invoice string) error {
+func (p *Meeting) createParticipant(ctx context.Context, meetingId int, name, amount string, invoice int) error {
 	_, err := p.Db.ExecContext(ctx, "insert into public.participant (id_event, name, amount, invoice) values ($1, $2, $3, $4)", meetingId, name, amount, invoice)
 	if err != nil {
 		return err
@@ -168,7 +173,7 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, string(invoice))
+	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return

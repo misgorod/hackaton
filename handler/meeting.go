@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -96,12 +97,19 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
-	_, err := p.Db.ExecContext(r.Context(), "insert into public.participant	(id_event, id_user, amount, invoice) values ($1, $2, $3, $4)", meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
+	err := p.createParticipant(r.Context(), meetingId, ownerId, reqBody.Amount, reqBody.Invoice)
 	if err != nil {
-		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	common.RespondOK(w)
+}
+
+func (p *Meeting) createParticipant(ctx context.Context, meetingId, ownerId, amount, invoice string) error {
+	_, err := p.Db.ExecContext(ctx, "insert into public.participant (id_event, id_user, amount, invoice) values ($1, $2, $3, $4)", meetingId, ownerId, amount, invoice)
+	if err != nil {
+		return err
+	}
 }
 
 func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +120,44 @@ func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	common.RespondJSON(w, http.StatusOK, participants)
+}
+
+type recipientPostRequest struct {
+	Amount    string `validate:"required,gte=1"`
+	Recipient string `validate:"required,gte=1"`
+}
+
+func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
+	ownerId := chi.URLParam(r, "ownerId")
+	meetindId := chi.URLParam(r, "meetingId")
+
+	var reqBody *recipientPostRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
+		return
+	}
+	if err := p.Validate.Struct(reqBody); err != nil {
+		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
+		return
+	}
+
+	var invoice int
+	err := p.Db.QueryRowContext(r.Context(), "SELECT nextval('public.serial')").Scan(&invoice)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
+		return
+	}
+	err = createInvoice(reqBody.Amount, string(invoice), reqBody.Recipient)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	err = p.createParticipant(r.Context(), meetindId, ownerId, reqBody.Amount, reqBody.Recipient)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	common.RespondOK(w)
 }
 
 func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]model.Participant, error) {
@@ -126,7 +172,7 @@ func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]
 		if err != nil {
 			return nil, err
 		}
-		state, err := GetStateInvoice(participant.Invoice, participant.UserId)
+		state, err := getStateInvoice(participant.Invoice, participant.UserId)
 		if err != nil {
 			return nil, err
 		}
@@ -136,16 +182,16 @@ func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]
 	return participants, nil
 }
 
-type StateInvoiceResponse struct {
+type stateInvoiceResponse struct {
 	State int `json:"omitempty"`
 }
 
-func GetStateInvoice(invoice string, recipient string) (int, error) {
+func getStateInvoice(invoice string, recipient string) (int, error) {
 	response, err := http.Get(fmt.Sprintf("http://89.208.84.235:31080/api/v1/invoice/810/%s/%s", invoice, recipient))
 	if err != nil {
 		return 0, err
 	}
-	var stateResponse *StateInvoiceResponse
+	var stateResponse *stateInvoiceResponse
 	if json.NewDecoder(response.Body).Decode(&stateResponse); err != nil {
 		return 0, err
 	}
@@ -155,5 +201,34 @@ func GetStateInvoice(invoice string, recipient string) (int, error) {
 		return 1, nil
 	} else {
 		return 0, errors.New("Wrong state of invoice")
+	}
+}
+
+type createInvoiceRequest struct {
+	Amount       string
+	CurrencyCode int
+	Description  string
+	Number       string
+	Recipient    string
+}
+
+func createInvoice(amount, invoice, recipient string) error {
+	body := createInvoiceRequest{
+		amount,
+		810,
+		"Description",
+		invoice,
+		recipient,
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	response, err := http.Post("http://89.208.84.235:31080/api/v1/invoice", "application/json", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return err
+	}
+	if response.Status != "200" {
+		return errors.New("Error while creating invoice")
 	}
 }

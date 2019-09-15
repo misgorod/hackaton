@@ -243,8 +243,8 @@ func createOutInvoice(amount, invoice, payer, recipient string) error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		bodyBytes, _ := ioutil.ReadAll(response.Body)
-		return errors.New(fmt.Sprintf("Error while creating invoice: bodySent: %v : status code: %v : bodyREcieved: %v", bodyBytes, response.StatusCode, bodyBytes))
+		responseBody, _ := ioutil.ReadAll(response.Body)
+		return errors.New(fmt.Sprintf("Error while creating invoice: bodySent: %v : status code: %v : bodyRecieved: %v", body, response.StatusCode, responseBody))
 	}
 	return nil
 }

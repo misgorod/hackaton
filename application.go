@@ -28,6 +28,7 @@ func main() {
 		r.Post("/{id}/meetings", meetingHandler.Post)
 		r.Get("/{id}/meetings", meetingHandler.GetAll)
 		r.Put("/{ownerId}/meetings/{meetingId}", meetingHandler.Put)
+		r.Post("/{ownerId}/meetings/{meetingId}", meetingHandler.PostRecipient)
 	})
 	r.Post("/invoice", invoiceHandler.Post)
 

@@ -125,7 +125,7 @@ func (p *Meeting) Get(w http.ResponseWriter, r *http.Request) {
 
 type recipientPostRequest struct {
 	Amount    string `validate:"required,gte=1"`
-	Recipient string `validate:"required,gte=1"`
+	Payer string `validate:"required,gte=1"`
 }
 
 func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
@@ -148,12 +148,12 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
 	}
-	err = createInvoice(reqBody.Amount, string(invoice), reqBody.Recipient)
+	err = createOutInvoice(reqBody.Amount, string(invoice), reqBody.Payer, ownerId)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	err = p.createParticipant(r.Context(), meetindId, ownerId, reqBody.Amount, reqBody.Recipient)
+	err = p.createParticipant(r.Context(), meetindId, ownerId, reqBody.Amount, string(invoice))
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -210,15 +210,17 @@ type createInvoiceRequest struct {
 	CurrencyCode int
 	Description  string
 	Number       string
+	Payer        string
 	Recipient    string
 }
 
-func createInvoice(amount, invoice, recipient string) error {
+func createOutInvoice(amount, invoice, payer, recipient string) error {
 	body := createInvoiceRequest{
 		amount,
 		810,
 		"Description",
 		invoice,
+		payer,
 		recipient,
 	}
 	bodyBytes, err := json.Marshal(body)

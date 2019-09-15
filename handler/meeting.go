@@ -221,7 +221,7 @@ func getStateInvoice(invoice string, recipient string) (int, error) {
 	} else if stateResponse.State == 5 {
 		return 1, nil
 	} else {
-		return 0, errors.New("Wrong state of invoice")
+		return 0, nil
 	}
 }
 

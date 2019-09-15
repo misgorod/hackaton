@@ -93,7 +93,11 @@ type meetingPutRequest struct {
 
 func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	meetingId := chi.URLParam(r, "meetingId")
-
+	meetingIdInt, err := strconv.Atoi(meetingId)
+	if err != nil {
+		common.RespondError(w, http.StatusBadRequest, "meetingId must be integer")
+		return
+	}
 	var reqBody *meetingPutRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
@@ -103,7 +107,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Validating error: %v", err))
 		return
 	}
-	err := p.createParticipant(r.Context(), meetingId, reqBody.Name, reqBody.Amount, reqBody.Invoice)
+	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, reqBody.Invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -111,7 +115,7 @@ func (p *Meeting) Put(w http.ResponseWriter, r *http.Request) {
 	common.RespondOK(w)
 }
 
-func (p *Meeting) createParticipant(ctx context.Context, meetingId, name, amount, invoice string) error {
+func (p *Meeting) createParticipant(ctx context.Context, meetingId int, name, amount, invoice string) error {
 	_, err := p.Db.ExecContext(ctx, "insert into public.participant (id_event, name, amount, invoice) values ($1, $2, $3, $4)", meetingId, name, amount, invoice)
 	if err != nil {
 		return err
@@ -137,8 +141,12 @@ type recipientPostRequest struct {
 
 func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 	ownerId := chi.URLParam(r, "ownerId")
-	meetindId := chi.URLParam(r, "meetingId")
-
+	meetingId := chi.URLParam(r, "meetingId")
+	meetingIdInt, err := strconv.Atoi(meetingId)
+	if err != nil {
+		common.RespondError(w, http.StatusBadRequest, "meeting id must be int")
+		return
+	}
 	var reqBody *recipientPostRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "cannot decode request")
@@ -150,7 +158,7 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var invoice int
-	err := p.Db.QueryRowContext(r.Context(), "SELECT nextval('public.serial')").Scan(&invoice)
+	err = p.Db.QueryRowContext(r.Context(), "SELECT nextval('public.serial')").Scan(&invoice)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Db error: %v", err))
 		return
@@ -160,7 +168,7 @@ func (p *Meeting) PostRecipient(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	err = p.createParticipant(r.Context(), meetindId, reqBody.Name, reqBody.Amount, string(invoice))
+	err = p.createParticipant(r.Context(), meetingIdInt, reqBody.Name, reqBody.Amount, string(invoice))
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -184,7 +192,7 @@ func (p *Meeting) getRecipientsStatus(ctx context.Context, meetingId string) ([]
 		if err != nil {
 			return nil, err
 		}
-		participant.State = string(state)
+		participant.State = strconv.Itoa(state)
 		participants = append(participants, participant)
 	}
 	return participants, nil
